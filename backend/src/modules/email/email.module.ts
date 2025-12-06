@@ -1,0 +1,17 @@
+import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
+import { ConfigModule } from '@nestjs/config';
+import { EmailService } from './email.service';
+import { EmailProcessor } from './email.processor';
+
+@Module({
+  imports: [
+    ConfigModule,
+    BullModule.registerQueue({
+      name: 'email',
+    }),
+  ],
+  providers: [EmailService, EmailProcessor],
+  exports: [BullModule, EmailService],
+})
+export class EmailModule {}

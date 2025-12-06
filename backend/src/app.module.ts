@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { UserModule } from './modules/user/user.module';
 import { QueueModule } from './modules/queue/queue.module';
+import { EmailModule } from './modules/email/email.module';
 import { ServiceModule } from './modules/service/service.module';
 import { BulkJobModule } from './modules/bulk-job/bulk-job.module';
 import { BreakPeriodModule } from './modules/break-period/break-period.module';
@@ -28,11 +29,12 @@ import { getTypeOrmConfig } from './config/typeorm.config';
     }),
 
     // Feature modules
+    QueueModule, // Must be imported before modules that use queues
+    EmailModule,
     AuthModule,
     UserModule,
     AppointmentModule,
     NotificationModule,
-    QueueModule,
     ServiceModule,
     BulkJobModule,
     BreakPeriodModule,

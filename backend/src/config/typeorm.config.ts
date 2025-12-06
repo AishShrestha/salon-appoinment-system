@@ -14,7 +14,7 @@ export const getTypeOrmConfig = (
 
     autoLoadEntities: true,
     synchronize: false,
-    logging: true,
+    // logging: true,
 
     // Migration configuration
     migrations: ['dist/database/migrations/*.js'],

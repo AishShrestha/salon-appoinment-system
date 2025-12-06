@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { RegisterDto } from '../auth/dto';
+import { hashPassword } from '../../common/utils';
 
 @Injectable()
 export class UserService {
@@ -62,8 +63,38 @@ export class UserService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // Create new user (password will be hashed by @BeforeInsert hook)
-    const user = this.userRepository.create(registerDto);
+    // Hash password before creating user
+    const hashedPassword = await hashPassword(registerDto.password);
+
+    // Create new user with hashed password
+    const user = this.userRepository.create({
+      ...registerDto,
+      password: hashedPassword,
+    });
+
+    return this.userRepository.save(user);
+  }
+
+  /**
+   * Find user by verification token
+   * @param token - Verification token
+   * @returns User if found, null otherwise
+   */
+  async findByVerificationToken(token: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { verificationToken: token },
+    });
+  }
+
+  /**
+   * Update user fields
+   * @param id - User ID
+   * @param updateData - Partial user data to update
+   * @returns Updated user
+   */
+  async update(id: number, updateData: Partial<User>): Promise<User> {
+    const user = await this.findById(id);
+    Object.assign(user, updateData);
     return this.userRepository.save(user);
   }
 
@@ -77,8 +108,6 @@ export class UserService {
     id: number,
     isVerified: boolean,
   ): Promise<User> {
-    const user = await this.findById(id);
-    user.isVerified = isVerified;
-    return this.userRepository.save(user);
+    return this.update(id, { isVerified });
   }
 }

@@ -33,6 +33,23 @@ export class User {
   isVerified: boolean;
 
   @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'verification_token',
+  })
+  @Exclude()
+  verificationToken: string | null;
+
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    name: 'verification_token_expiry',
+  })
+  @Exclude()
+  verificationTokenExpiry: Date | null;
+
+  @Column({
     type: 'enum',
     enum: UserRole,
     default: UserRole.USER,
@@ -50,13 +67,4 @@ export class User {
 
   @OneToMany(() => BulkJob, (bulkJob) => bulkJob.user)
   bulkJobs: BulkJob[];
-
-  // Hash password before inserting or updating
-  @BeforeInsert()
-  @BeforeUpdate()
-  async hashPassword() {
-    if (this.password) {
-      this.password = await hashPassword(this.password);
-    }
-  }
 }
