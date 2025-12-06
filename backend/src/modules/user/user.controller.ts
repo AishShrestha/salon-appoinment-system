@@ -1,13 +1,7 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { Controller, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UserService } from './user.service';
-import { JwtAuthGuard, RolesGuard } from '../auth/guards';
-import { Roles, CurrentUser } from '../auth/decorators';
+import { Auth, CurrentUser } from '../auth/decorators';
 import { UserRole } from '../../common/enums';
 
 @ApiTags('Users')
@@ -21,9 +15,7 @@ export class UserController {
    * Requires: JWT token + admin role
    */
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth('JWT-auth')
+  @Auth(UserRole.ADMIN) // Requires authentication + admin role
   @ApiOperation({ summary: 'Get all users (Admin only)' })
   @ApiResponse({
     status: 200,
@@ -61,8 +53,7 @@ export class UserController {
    * Requires: JWT token (any role)
    */
   @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
+  @Auth() // Requires authentication, any role
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({
     status: 200,
@@ -94,9 +85,7 @@ export class UserController {
    * Requires: JWT token + admin role
    */
   @Get('admin/dashboard')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth('JWT-auth')
+  @Auth(UserRole.ADMIN) // Requires authentication + admin role
   @ApiOperation({ summary: 'Get admin dashboard statistics (Admin only)' })
   @ApiResponse({
     status: 200,

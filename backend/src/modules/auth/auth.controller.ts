@@ -4,20 +4,12 @@ import {
   Body,
   HttpCode,
   HttpStatus,
-  UseGuards,
   Get,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto';
-import { JwtAuthGuard } from './guards';
-import { CurrentUser } from './decorators';
+import { Auth, CurrentUser } from './decorators';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -89,8 +81,7 @@ export class AuthController {
    * Protected route - requires JWT token
    */
   @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
+  @Auth() // Requires authentication, any role
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({
     status: 200,
