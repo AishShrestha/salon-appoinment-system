@@ -36,12 +36,12 @@ export class Appointment {
   @Column({
     type: 'enum',
     enum: AppointmentStatus,
-    default: AppointmentStatus.PENDING,
+    default: AppointmentStatus.CONFIRMED,
   })
   status: AppointmentStatus;
 
   @Column({ type: 'text', nullable: true })
-  notes: string;
+  notes?: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
