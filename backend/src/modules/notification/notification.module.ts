@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bull';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationTemplate } from './entities/notification-template.entity';
+import { NotificationTemplateSeeder } from './notification-template.seeder';
 import { BookingNotificationProcessor } from './processors/booking-notification.processor';
 import { User } from '../user/entities/user.entity';
 
@@ -15,7 +16,11 @@ import { User } from '../user/entities/user.entity';
     }),
   ],
   controllers: [NotificationController],
-  providers: [NotificationService, BookingNotificationProcessor],
+  providers: [
+    NotificationService,
+    NotificationTemplateSeeder,
+    BookingNotificationProcessor,
+  ],
   exports: [TypeOrmModule, NotificationService],
 })
 export class NotificationModule {}
