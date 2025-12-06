@@ -178,14 +178,14 @@ export class AppointmentService {
       // Check if slot is in break time
       await this.validateNotInBreakTime(startTime, endTime);
 
-      // Create appointment with auto-confirm
+      // Create appointment with PENDING status
       const appointment = this.appointmentRepository.create({
         userId,
         serviceId,
         date: new Date(date),
         startTime,
         endTime,
-        status: AppointmentStatus.CONFIRMED,
+        status: AppointmentStatus.PENDING,
         ...(notes && { notes }),
       });
 
@@ -193,11 +193,11 @@ export class AppointmentService {
         await this.appointmentRepository.save(appointment);
 
       this.logger.log(
-        `Appointment created and confirmed: ID ${savedAppointment.id} for user ${userId}`,
+        `Appointment created with PENDING status: ID ${savedAppointment.id} for user ${userId}`,
       );
 
-      // Queue confirmation notification
-      await this.queueBookingConfirmation(savedAppointment, service);
+      // Queue booking request notification
+      await this.queueBookingRequest(savedAppointment, service);
 
       if (!appointment) {
         throw new InternalServerErrorException(
@@ -310,6 +310,56 @@ export class AppointmentService {
     }
 
     return appointment;
+  }
+
+  /**
+   * Approve appointment (admin only)
+   * Changes status from PENDING to CONFIRMED
+   * @param id - Appointment ID
+   * @returns Updated appointment
+   */
+  async approveAppointment(id: number): Promise<Appointment> {
+    try {
+      const appointment = await this.findOne(id);
+
+      // Can only approve pending appointments
+      if (appointment.status !== AppointmentStatus.PENDING) {
+        throw new BadRequestException(
+          'Only pending appointments can be approved',
+        );
+      }
+
+      appointment.status = AppointmentStatus.CONFIRMED;
+
+      const updatedAppointment =
+        await this.appointmentRepository.save(appointment);
+
+      this.logger.log(`Appointment ${id} approved by admin`);
+
+      // Get service for notification
+      const service = await this.serviceRepository.findOne({
+        where: { id: appointment.serviceId },
+      });
+
+      if (service) {
+        // Queue confirmation notification
+        await this.queueBookingConfirmation(updatedAppointment, service);
+      }
+
+      return updatedAppointment;
+    } catch (error) {
+      if (error.status) {
+        throw error;
+      }
+
+      this.logger.error(
+        `Failed to approve appointment ${id}: ${error.message}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Failed to approve appointment. Please try again later.',
+      );
+    }
   }
 
   /**
@@ -450,7 +500,46 @@ export class AppointmentService {
   }
 
   /**
-   * Queue booking confirmation notification
+   * Queue booking request notification (for PENDING appointments)
+   */
+  private async queueBookingRequest(
+    appointment: Appointment,
+    service: Service,
+  ): Promise<void> {
+    try {
+      await this.notificationQueue.add(
+        'booking-request',
+        {
+          appointmentId: appointment.id,
+          userId: appointment.userId,
+          serviceName: service.name,
+          date: appointment.date,
+          startTime: appointment.startTime,
+          endTime: appointment.endTime,
+        },
+        {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 2000,
+          },
+        },
+      );
+
+      this.logger.log(
+        `Booking request notification queued for appointment ${appointment.id}`,
+      );
+    } catch (error) {
+      // Don't fail booking if notification fails
+      this.logger.error(
+        `Failed to queue booking request notification for appointment ${appointment.id}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Queue booking confirmation notification (when admin approves)
    */
   private async queueBookingConfirmation(
     appointment: Appointment,
@@ -476,11 +565,12 @@ export class AppointmentService {
         },
       );
 
-      this.logger.log(`Notification queued for appointment ${appointment.id}`);
+      this.logger.log(
+        `Confirmation notification queued for appointment ${appointment.id}`,
+      );
     } catch (error) {
-      // Don't fail booking if notification fails
       this.logger.error(
-        `Failed to queue notification for appointment ${appointment.id}`,
+        `Failed to queue confirmation notification for appointment ${appointment.id}`,
         error.stack,
       );
     }

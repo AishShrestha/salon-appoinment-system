@@ -26,7 +26,57 @@ export class BookingNotificationProcessor {
   ) {}
 
   /**
-   * Process booking confirmation (auto-confirmed on booking)
+   * Process booking request (for PENDING appointments)
+   */
+  @Process('booking-request')
+  async handleBookingRequest(job: Job) {
+    this.logger.log(
+      `Processing booking request for appointment ${job.data.appointmentId}`,
+    );
+
+    const { userId, serviceName, date, startTime, endTime } = job.data;
+
+    try {
+      // Get user
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      if (!user) {
+        this.logger.error(`User ${userId} not found`);
+        return;
+      }
+
+      // Format date
+      const formattedDate = new Date(date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Send booking request email
+      await this.notificationService.sendBookingRequestReceived(
+        user.email,
+        user.name,
+        serviceName,
+        formattedDate,
+        startTime,
+        endTime,
+      );
+
+      this.logger.log(
+        `Booking request email sent to ${user.email} for appointment ${job.data.appointmentId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send booking request: ${error.message}`,
+        error.stack,
+      );
+      throw error; // Bull will retry
+    }
+  }
+
+  /**
+   * Process booking confirmation (when admin approves)
    */
   @Process('booking-confirmation')
   async handleBookingConfirmation(job: Job) {

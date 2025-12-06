@@ -153,6 +153,36 @@ export class AppointmentController {
   }
 
   /**
+   * Approve appointment (admin only)
+   * Changes status from PENDING to CONFIRMED
+   */
+  @Patch(':id/approve')
+  @Auth(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Approve pending appointment (admin only)',
+    description:
+      'Approve a pending appointment and send confirmation email to user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Appointment approved successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Can only approve pending appointments',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - admin access required',
+  })
+  @ApiResponse({ status: 404, description: 'Appointment not found' })
+  async approveAppointment(@Param('id') id: string) {
+    return this.appointmentService.approveAppointment(+id);
+  }
+
+  /**
    * Mark appointment as completed (admin only)
    * Used after service delivery to mark appointment as done
    */
