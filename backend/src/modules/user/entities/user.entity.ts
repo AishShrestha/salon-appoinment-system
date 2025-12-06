@@ -5,10 +5,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { UserRole } from '../../../common/enums';
 import { Appointment } from '../../appointment/entities/appointment.entity';
 import { BulkJob } from '../../bulk-job/entities/bulk-job.entity';
+import { hashPassword } from '../../../common/utils';
 
 @Entity('users')
 export class User {
@@ -22,6 +26,7 @@ export class User {
   email: string;
 
   @Column({ type: 'varchar', length: 255 })
+  @Exclude()
   password: string;
 
   @Column({ type: 'boolean', default: false, name: 'is_verified' })
@@ -45,4 +50,13 @@ export class User {
 
   @OneToMany(() => BulkJob, (bulkJob) => bulkJob.user)
   bulkJobs: BulkJob[];
+
+  // Hash password before inserting or updating
+  @BeforeInsert()
+  @BeforeUpdate()
+  async hashPassword() {
+    if (this.password) {
+      this.password = await hashPassword(this.password);
+    }
+  }
 }

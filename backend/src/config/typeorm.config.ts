@@ -9,7 +9,7 @@ export const getTypeOrmConfig = (
     host: configService.get<string>('DB_HOST', 'localhost'),
     port: configService.get<number>('DB_PORT', 5432),
     username: configService.get<string>('DB_USER', 'postgres'),
-    password: configService.get<string>('DB_PASS', 'postgres'),
+    password: configService.get<string>('DB_PASS', 'kanekiken'),
     database: configService.get<string>('DB_NAME', 'salon_booking'),
 
     autoLoadEntities: true,
