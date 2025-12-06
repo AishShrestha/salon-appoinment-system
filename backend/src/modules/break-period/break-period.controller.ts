@@ -10,9 +10,6 @@ import { CreateBreakPeriodDto } from './dto';
 import { Auth } from '../auth/decorators';
 import { UserRole } from '../../common/enums';
 
-/**
- * BreakPeriodController - RESTful endpoints for break time management
- */
 @ApiTags('break-periods')
 @Controller('break-period')
 export class BreakPeriodController {
@@ -44,7 +41,6 @@ export class BreakPeriodController {
 
   /**
    * Get all break periods
-   * Public endpoint - used by booking system to calculate availability
    */
   @Get()
   @ApiOperation({ summary: 'Get all break periods' })

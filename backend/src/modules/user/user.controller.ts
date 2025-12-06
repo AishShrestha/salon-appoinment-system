@@ -12,10 +12,9 @@ export class UserController {
   /**
    * Get all users - Admin only
    * GET /users
-   * Requires: JWT token + admin role
    */
   @Get()
-  @Auth(UserRole.ADMIN) // Requires authentication + admin role
+  @Auth(UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all users (Admin only)' })
   @ApiResponse({
     status: 200,
@@ -50,10 +49,9 @@ export class UserController {
   /**
    * Get current user profile
    * GET /users/profile
-   * Requires: JWT token (any role)
    */
   @Get('profile')
-  @Auth() // Requires authentication, any role
+  @Auth(UserRole.USER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({
     status: 200,
@@ -76,48 +74,6 @@ export class UserController {
     return {
       message: 'Profile retrieved successfully',
       data: user,
-    };
-  }
-
-  /**
-   * Admin-only dashboard stats
-   * GET /users/admin/dashboard
-   * Requires: JWT token + admin role
-   */
-  @Get('admin/dashboard')
-  @Auth(UserRole.ADMIN) // Requires authentication + admin role
-  @ApiOperation({ summary: 'Get admin dashboard statistics (Admin only)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Dashboard statistics',
-    schema: {
-      example: {
-        message: 'Admin dashboard data',
-        data: {
-          totalUsers: 10,
-          verifiedUsers: 7,
-          adminUser: {
-            id: 1,
-            email: 'admin@example.com',
-            name: 'Admin User',
-            role: 'admin',
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
-  async getAdminDashboard(@CurrentUser() user: any) {
-    const users = await this.userService.findAll();
-
-    return {
-      message: 'Admin dashboard data',
-      data: {
-        totalUsers: users.length,
-        adminUser: user,
-        verifiedUsers: users.filter((u) => u.isVerified).length,
-      },
     };
   }
 }

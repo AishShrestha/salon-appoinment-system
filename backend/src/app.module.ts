@@ -29,7 +29,7 @@ import { getTypeOrmConfig } from './config/typeorm.config';
     }),
 
     // Feature modules
-    QueueModule, // Must be imported before modules that use queues
+    QueueModule,
     EmailModule,
     AuthModule,
     UserModule,

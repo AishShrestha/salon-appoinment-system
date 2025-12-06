@@ -11,10 +11,6 @@ import { BreakPeriod } from './entities/break-period.entity';
 import { CreateBreakPeriodDto } from './dto';
 import { timeToMinutes } from '../../common/utils';
 
-/**
- * BreakPeriodService - Handles break time management
- * Follows Single Responsibility Principle
- */
 @Injectable()
 export class BreakPeriodService {
   private readonly logger = new Logger(BreakPeriodService.name);

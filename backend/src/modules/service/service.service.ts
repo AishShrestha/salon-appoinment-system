@@ -9,10 +9,6 @@ import { Repository } from 'typeorm';
 import { Service } from './entities/service.entity';
 import { CreateServiceDto, UpdateServiceDto } from './dto';
 
-/**
- * ServiceService - Handles CRUD operations for services
- * Follows Single Responsibility Principle
- */
 @Injectable()
 export class ServiceService {
   private readonly logger = new Logger(ServiceService.name);

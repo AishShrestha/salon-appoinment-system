@@ -18,9 +18,6 @@ import { CreateServiceDto, UpdateServiceDto } from './dto';
 import { Auth } from '../auth/decorators';
 import { UserRole } from '../../common/enums';
 
-/**
- * ServiceController - RESTful endpoints for service management
- */
 @ApiTags('services')
 @Controller('service')
 export class ServiceController {
@@ -46,7 +43,7 @@ export class ServiceController {
 
   /**
    * Get all services
-   * Public endpoint - no authentication required
+
    */
   @Get()
   @ApiOperation({ summary: 'Get all services' })
@@ -57,7 +54,6 @@ export class ServiceController {
 
   /**
    * Get a single service by ID
-   * Public endpoint - no authentication required
    */
   @Get(':id')
   @ApiOperation({ summary: 'Get a service by ID' })
