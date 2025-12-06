@@ -3,11 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotificationTemplate } from './entities/notification-template.entity';
 
-/**
- * NotificationTemplateSeeder
- * Seeds predefined appointment confirmation templates into the database
- * Follows SOLID, KISS, DRY principles with proper error handling
- */
 @Injectable()
 export class NotificationTemplateSeeder implements OnModuleInit {
   private readonly logger = new Logger(NotificationTemplateSeeder.name);
@@ -26,7 +21,6 @@ export class NotificationTemplateSeeder implements OnModuleInit {
 
   /**
    * Seed predefined templates if they don't exist
-   * Uses KISS principle - simple and straightforward
    */
   private async seedTemplates(): Promise<void> {
     try {
@@ -46,7 +40,6 @@ export class NotificationTemplateSeeder implements OnModuleInit {
 
       this.logger.log('Template seeding completed');
     } catch (error) {
-      // Proper error handling - log but don't crash the app
       this.logger.error(
         `Failed to seed templates: ${error.message}`,
         error.stack,
@@ -56,7 +49,6 @@ export class NotificationTemplateSeeder implements OnModuleInit {
 
   /**
    * Get predefined appointment confirmation templates
-   * DRY principle - centralized template definitions
    */
   private getPredefinedTemplates(): Partial<NotificationTemplate>[] {
     return [

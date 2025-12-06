@@ -11,7 +11,7 @@ import {
 import { Exclude } from 'class-transformer';
 import { UserRole } from '../../../common/enums';
 import { Appointment } from '../../appointment/entities/appointment.entity';
-import { BulkJob } from '../../bulk-job/entities/bulk-job.entity';
+import { BulkJob } from '../../bulk-appointment/entities/bulk-job.entity';
 import { hashPassword } from '../../../common/utils';
 
 @Entity('users')

@@ -1,0 +1,11 @@
+Customer Name,Customer Email,Service Name,Date,Start Time,Notes
+John Doe,john.doe@example.com,Haircut,2025-12-10,09:00,Regular customer
+Jane Smith,jane.smith@example.com,Hair Coloring,2025-12-10,10:30,First time client
+Mike Johnson,mike.j@example.com,Manicure,2025-12-11,14:00,Prefers gel polish
+Sarah Williams,sarah.w@example.com,Massage,2025-12-12,11:00,60-minute deep tissue
+David Brown,david.brown@example.com,Facial Treatment,2025-12-12,15:30,Sensitive skin
+Emily Davis,emily.d@example.com,Pedicure,2025-12-13,10:00,Regular pedicure
+Robert Miller,robert.miller@example.com,Haircut,2025-12-13,13:30,Beard trim included
+Lisa Anderson,lisa.anderson@example.com,Waxing,2025-12-14,09:30,Full leg waxing
+James Wilson,james.w@example.com,Hair Styling,2025-12-14,16:00,Event styling
+Maria Garcia,maria.garcia@example.com,Spa Package,2025-12-15,10:00,Premium package

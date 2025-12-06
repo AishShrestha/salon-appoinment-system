@@ -8,7 +8,7 @@ import { UserModule } from './modules/user/user.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { EmailModule } from './modules/email/email.module';
 import { ServiceModule } from './modules/service/service.module';
-import { BulkJobModule } from './modules/bulk-job/bulk-job.module';
+import { BulkAppointmentModule } from './modules/bulk-appointment/bulk-appointment.module';
 import { BreakPeriodModule } from './modules/break-period/break-period.module';
 import { getTypeOrmConfig } from './config/typeorm.config';
 
@@ -36,7 +36,7 @@ import { getTypeOrmConfig } from './config/typeorm.config';
     AppointmentModule,
     NotificationModule,
     ServiceModule,
-    BulkJobModule,
+    BulkAppointmentModule,
     BreakPeriodModule,
   ],
   controllers: [],
