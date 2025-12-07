@@ -1,6 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import * as nodemailer from 'nodemailer';
+import { NotificationTemplate } from './entities/notification-template.entity';
 
 /**
  * NotificationService - Handles email notifications
@@ -10,7 +13,11 @@ export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
   private transporter: nodemailer.Transporter;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @InjectRepository(NotificationTemplate)
+    private readonly templateRepository: Repository<NotificationTemplate>,
+  ) {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get('SMTP_HOST'),
       port: this.configService.get('SMTP_PORT'),
@@ -236,5 +243,46 @@ export class NotificationService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Get all notification templates
+   */
+  async findAllTemplates(): Promise<NotificationTemplate[]> {
+    return this.templateRepository.find({
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+  }
+
+  /**
+   * Get a single notification template by ID
+   */
+  async findTemplateById(id: number): Promise<NotificationTemplate> {
+    const template = await this.templateRepository.findOne({
+      where: { id },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template with ID ${id} not found`);
+    }
+
+    return template;
+  }
+
+  /**
+   * Get a template by name
+   */
+  async findTemplateByName(name: string): Promise<NotificationTemplate> {
+    const template = await this.templateRepository.findOne({
+      where: { name },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template with name "${name}" not found`);
+    }
+
+    return template;
   }
 }
