@@ -10,6 +10,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, VerifyEmailDto } from './dto';
 import { Auth, CurrentUser } from './decorators';
+import { UserRole } from 'src/common/enums';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -19,7 +20,6 @@ export class AuthController {
   /**
    * Register a new user
    * POST /auth/register
-   * Note: No JWT token is issued. User must verify email first.
    */
   @Post('register')
   @ApiOperation({
@@ -48,7 +48,6 @@ export class AuthController {
   /**
    * Login user
    * POST /auth/login
-   * Note: Only verified users can login
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -86,7 +85,6 @@ export class AuthController {
   /**
    * Verify user email and receive JWT token
    * POST /auth/verify-email
-   * Note: This is the first time user receives JWT token after registration
    */
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
@@ -120,10 +118,9 @@ export class AuthController {
   /**
    * Get current user profile
    * GET /auth/me
-   * Protected route - requires JWT token
    */
   @Get('me')
-  @Auth() // Requires authentication, any role
+  @Auth(UserRole.USER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({
     status: 200,

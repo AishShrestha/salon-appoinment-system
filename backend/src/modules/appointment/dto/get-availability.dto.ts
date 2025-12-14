@@ -1,11 +1,13 @@
 import { IsNotEmpty, IsDateString, IsInt, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class GetAvailabilityDto {
   @ApiProperty({
     description: 'Service ID to check availability for',
     example: 1,
   })
+  @Type(() => Number)
   @IsInt()
   @IsNotEmpty()
   serviceId: number;

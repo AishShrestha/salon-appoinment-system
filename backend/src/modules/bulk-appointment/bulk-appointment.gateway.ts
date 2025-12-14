@@ -5,7 +5,8 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
   namespace: 'bulk-appointments',
@@ -21,8 +22,43 @@ export class BulkAppointmentGateway
 
   private readonly logger = new Logger(BulkAppointmentGateway.name);
 
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
+  constructor(private readonly jwtService: JwtService) {}
+
+  async handleConnection(client: Socket) {
+    try {
+      // Extract token from handshake auth or query
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.headers?.authorization?.split(' ')[1] ||
+        client.handshake.query?.token;
+
+      if (!token) {
+        this.logger.warn(
+          `Client ${client.id} connection rejected: No token provided`,
+        );
+        client.disconnect();
+        return;
+      }
+
+      // Verify JWT token
+      const payload = await this.jwtService.verifyAsync(token);
+
+      // Attach user info to socket for later use
+      client.data.user = {
+        id: payload.sub,
+        email: payload.email,
+        role: payload.role,
+      };
+
+      this.logger.log(
+        `Client connected: ${client.id} (User: ${payload.email})`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Client ${client.id} authentication failed: ${error.message}`,
+      );
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {
