@@ -244,6 +244,71 @@ export class NotificationService {
       throw error;
     }
   }
+  /**
+   * Send booking rescheduled email
+   */
+  async sendBookingRescheduled(
+    email: string,
+    fullName: string,
+    serviceName: string,
+    date: string,
+    startTime: string,
+    endTime: string,
+  ): Promise<void> {
+    const mailOptions = {
+      from: this.configService.get('SMTP_FROM'),
+      to: email,
+      subject: 'Appointment Rescheduled',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #2196f3; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            .details { background-color: white; padding: 15px; margin: 15px 0; border-left: 4px solid #2196f3; }
+            .footer { text-align: center; padding: 20px; color: #777; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Appointment Rescheduled</h1>
+            </div>
+            <div class="content">
+              <p>Dear ${fullName},</p>
+              <p>Your appointment has been <strong>rescheduled</strong>. Here are your updated appointment details:</p>
+              <div class="details">
+                <p><strong>Service:</strong> ${serviceName}</p>
+                <p><strong>Date:</strong> ${date}</p>
+                <p><strong>Time:</strong> ${startTime} - ${endTime}</p>
+              </div>
+              <p>If you did not request this change or need further assistance, please contact us as soon as possible.</p>
+              <p>We look forward to seeing you at your new appointment time!</p>
+            </div>
+            <div class="footer">
+              <p>This is an automated email. Please do not reply.</p>
+              <p>&copy; ${new Date().getFullYear()} Salon Booking System. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Booking rescheduled email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send booking rescheduled to ${email}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 
   /**
    * Get all notification templates

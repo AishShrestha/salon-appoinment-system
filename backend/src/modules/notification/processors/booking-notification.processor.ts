@@ -167,6 +167,19 @@ export class BookingNotificationProcessor {
         this.logger.log(
           `Cancellation notification sent to ${user.email} for appointment ${job.data.appointmentId}`,
         );
+      } else if (action === 'rescheduled') {
+        await this.notificationService.sendBookingRescheduled(
+          user.email,
+          user.name,
+          serviceName,
+          formattedDate,
+          startTime,
+          endTime,
+        );
+
+        this.logger.log(
+          `Reschedule notification sent to ${user.email} for appointment ${job.data.appointmentId}`,
+        );
       }
     } catch (error) {
       this.logger.error(

@@ -9,18 +9,22 @@ import {
   Patch,
   UseGuards,
   Req,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiResponse,
+  ApiParam,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AppointmentService } from './appointment.service';
 import {
   CreateAppointmentDto,
   GetAvailabilityDto,
   FilterAppointmentsDto,
+  RescheduleAppointmentDto,
 } from './dto';
 import { Auth, Roles } from '../auth/decorators';
 import { UserRole } from '../../common/enums';
@@ -210,5 +214,33 @@ export class AppointmentController {
   @ApiResponse({ status: 404, description: 'Appointment not found' })
   async completeAppointment(@Param('id') id: string) {
     return this.appointmentService.markCompleted(+id);
+  }
+
+  /**
+   * Reschedule an appointment
+   */
+  @Patch(':id/reschedule')
+  @Auth(UserRole.USER, UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reschedule an appointment' })
+  @ApiParam({ name: 'id', type: 'number', description: 'Appointment ID' })
+  @ApiBody({ type: RescheduleAppointmentDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Appointment rescheduled successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid state or time slot conflict',
+  })
+  @ApiResponse({ status: 403, description: 'Not owner or admin' })
+  @ApiResponse({ status: 404, description: 'Appointment not found' })
+  async reschedule(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RescheduleAppointmentDto,
+    @Req() req: any,
+  ) {
+    const user = req.user;
+    return this.appointmentService.reschedule(id, dto, user);
   }
 }

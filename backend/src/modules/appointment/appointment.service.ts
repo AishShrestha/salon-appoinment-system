@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { getManager, Repository } from 'typeorm';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { Appointment } from './entities/appointment.entity';
@@ -16,6 +16,7 @@ import {
   CreateAppointmentDto,
   GetAvailabilityDto,
   FilterAppointmentsDto,
+  RescheduleAppointmentDto,
 } from './dto';
 import {
   calculateAvailableSlots,
@@ -27,7 +28,8 @@ import {
   BookingSlot,
   TimeSlot,
 } from '../../common/utils';
-import { AppointmentStatus } from '../../common/enums';
+import { AppointmentStatus, LogStatus } from '../../common/enums';
+import { AppointmentLog } from './entities';
 
 @Injectable()
 export class AppointmentService {
@@ -399,6 +401,148 @@ export class AppointmentService {
         'Failed to mark appointment as completed. Please try again later.',
       );
     }
+  }
+
+  async reschedule(
+    id: number,
+    dto: RescheduleAppointmentDto,
+    currentUser: any,
+  ): Promise<Appointment> {
+    const { date, startTime, notes } = dto;
+
+    // Validate date and time
+    validateDateFormat(date);
+    validateTimeFormat(startTime);
+
+    if (isDateInPast(date)) {
+      throw new BadRequestException('Cannot reschedule to a past date');
+    }
+
+    // Find appointment with relations
+    const appointment = await this.appointmentRepository.findOne({
+      where: { id },
+      relations: ['user', 'service'],
+    });
+    if (!appointment) {
+      throw new NotFoundException(`Appointment with ID ${id} not found`);
+    }
+
+    // Only owner or admin can reschedule
+    const isOwner = appointment.userId === currentUser.id;
+    const isAdmin =
+      currentUser.role === 'admin' || currentUser.role === 'ADMIN';
+    if (!isOwner && !isAdmin) {
+      throw new BadRequestException(
+        'You are not allowed to reschedule this appointment',
+      );
+    }
+
+    // Only allow reschedule if status is PENDING or CONFIRMED
+    if (
+      appointment.status === AppointmentStatus.COMPLETED ||
+      appointment.status === AppointmentStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'Cannot reschedule a completed or cancelled appointment',
+      );
+    }
+
+    // Calculate new endTime using service duration
+    const endTime = calculateEndTime(startTime, appointment.service.duration);
+
+    // Check for overlapping appointments (excluding this appointment)
+    const overlap = await this.appointmentRepository
+      .createQueryBuilder('a')
+      .where('a.date = :date', { date })
+      .andWhere('a.serviceId = :serviceId', {
+        serviceId: appointment.serviceId,
+      })
+      .andWhere('a.id != :id', { id })
+      .andWhere('a.startTime < :endTime AND a.endTime > :startTime', {
+        startTime,
+        endTime,
+      })
+      .andWhere('a.status != :cancelled', {
+        cancelled: AppointmentStatus.CANCELLED,
+      })
+      .getOne();
+
+    if (overlap) {
+      throw new BadRequestException(
+        'This time slot overlaps with another appointment',
+      );
+    }
+
+    // Check for break period overlap
+    const breakPeriods = await this.breakPeriodRepository.find();
+    const isInBreak = breakPeriods.some((bp) =>
+      doSlotsOverlap(startTime, endTime, bp.startTime, bp.endTime),
+    );
+    if (isInBreak) {
+      throw new BadRequestException(
+        'This time slot overlaps with a break period. Please choose another time.',
+      );
+    }
+
+    // Transaction: update appointment + create log
+    return await this.appointmentRepository.manager.transaction(
+      async (manager) => {
+        // Ensure oldDate is a Date object
+        const oldDate =
+          appointment.date instanceof Date
+            ? appointment.date
+            : new Date(appointment.date);
+        const oldStartTime = appointment.startTime;
+        const oldEndTime = appointment.endTime;
+
+        appointment.date = new Date(date);
+        appointment.startTime = startTime;
+        appointment.endTime = endTime;
+        if (notes) appointment.notes = notes;
+
+        // If previously CONFIRMED, set back to PENDING
+        if (appointment.status === AppointmentStatus.CONFIRMED) {
+          appointment.status = AppointmentStatus.PENDING;
+        }
+
+        const updatedAppointment = await manager.save(Appointment, appointment);
+
+        // Create appointment log according to entity
+        // Ensure appointment.date is a Date object
+        const newDateObj =
+          appointment.date instanceof Date
+            ? appointment.date
+            : new Date(appointment.date);
+        const log = manager.create(AppointmentLog, {
+          appointmentId: updatedAppointment.id,
+          status: LogStatus.RESCHEDULED,
+          message: `Appointment rescheduled from ${oldDate.toISOString().split('T')[0]} ${oldStartTime}-${oldEndTime} to ${newDateObj.toISOString().split('T')[0]} ${appointment.startTime}-${appointment.endTime} by user ${currentUser.id}${notes ? ' | Notes: ' + notes : ''}`,
+          createdAt: new Date(),
+          appointment: updatedAppointment,
+        });
+        await manager.save(AppointmentLog, log);
+
+        // Send notification/email
+        try {
+          await this.notificationQueue.add('status-change', {
+            appointmentId: appointment.id,
+            userId: appointment.userId,
+            serviceName: appointment.service?.name,
+            action: 'rescheduled',
+            date: appointment.date,
+            startTime: appointment.startTime,
+            endTime: appointment.endTime,
+          });
+        } catch (err) {
+          this.logger.error(
+            `Failed to queue reschedule notification for appointment ${appointment.id}`,
+            err.stack,
+          );
+        }
+
+        return updatedAppointment;
+      },
+    );
   }
 
   /**
