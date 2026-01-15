@@ -118,4 +118,28 @@ export class UserService {
   ): Promise<User> {
     return this.update(id, { isVerified });
   }
+
+  /**
+   * Get user by ID (Admin only)
+   * @param id - User ID (number)
+   * @returns User details (no sensitive fields)
+   * @throws NotFoundException if user doesn't exist
+   */
+  async getUserById(id: number) {
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    // Exclude sensitive fields
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      roles: [user.role],
+      status: user.isVerified ? 'ACTIVE' : 'INACTIVE',
+      createdAt: user.createdAt,
+    };
+  }
 }

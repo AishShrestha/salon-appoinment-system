@@ -1,8 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { Auth, CurrentUser } from '../auth/decorators';
 import { UserRole } from '../../common/enums';
+import { ParseUUIDPipe } from '@nestjs/common';
 
 @ApiTags('Users')
 @Controller('users')
@@ -75,5 +82,40 @@ export class UserController {
       message: 'Profile retrieved successfully',
       data: user,
     };
+  }
+
+  /**
+   * Get user by ID (Admin only)
+   * GET /users/:id
+   */
+  @Get(':id')
+  @Auth(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get user by ID (Admin only)' })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'User ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User details',
+    schema: {
+      example: {
+        id: 123,
+        name: 'John Doe',
+        email: 'john@example.com',
+        roles: ['ADMIN'],
+        status: 'ACTIVE',
+        createdAt: '2026-01-01T10:00:00Z',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUserById(@Param('id') id: number) {
+    const user = await this.userService.getUserById(id);
+    return user;
   }
 }
