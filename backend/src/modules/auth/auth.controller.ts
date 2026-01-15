@@ -7,20 +7,81 @@ import {
   Get,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, VerifyEmailDto } from './dto';
+import {
+  LoginDto,
+  RegisterDto,
+  VerifyEmailDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ChangePasswordDto,
+} from './dto';
 import { Auth, CurrentUser } from './decorators';
 import { UserRole } from 'src/common/enums';
 
 @ApiTags('Authentication')
 @Controller('auth')
+@SkipThrottle() // Skip global throttle, apply only where specified
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   /**
-   * Register a new user
-   * POST /auth/register
+   * Send password reset email - 3 requests per 5 minutes
    */
+  @Throttle({ default: { limit: 3, ttl: 300000 } })
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send password reset email',
+  })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset email sent if user exists.',
+    schema: {
+      example: {
+        status: true,
+        message: 'A password reset link has been sent.',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  /**
+   * Reset password using token - 5 requests per minute
+   */
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reset password using token',
+    description:
+      'Resets user password using the token sent via email. Always returns success for security.',
+  })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Generic success response (always the same)',
+    schema: {
+      example: {
+        status: true,
+        message: 'Password has been reset successfully.',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  /**
+   * Register a new user - 3 requests per 5 minutes
+   */
+  @Throttle({ default: { limit: 3, ttl: 300000 } })
   @Post('register')
   @ApiOperation({
     summary: 'Register a new user',
@@ -46,9 +107,9 @@ export class AuthController {
   }
 
   /**
-   * Login user
-   * POST /auth/login
+   * Login user - 5 requests per minute
    */
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -83,9 +144,9 @@ export class AuthController {
   }
 
   /**
-   * Verify user email and receive JWT token
-   * POST /auth/verify-email
+   * Verify email - 5 requests per minute
    */
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -117,7 +178,6 @@ export class AuthController {
 
   /**
    * Get current user profile
-   * GET /auth/me
    */
   @Get('me')
   @Auth(UserRole.USER, UserRole.ADMIN)
@@ -142,5 +202,33 @@ export class AuthController {
     return {
       user,
     };
+  }
+
+  /**
+   * Change password for authenticated user
+   */
+  @Post('change-password')
+  @Auth(UserRole.USER, UserRole.ADMIN)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password for authenticated user' })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Password changed successfully',
+    schema: {
+      example: {
+        status: true,
+        message: 'Password changed successfully.',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized or invalid password' })
+  async changePassword(
+    @CurrentUser() user: any,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(user, changePasswordDto);
   }
 }

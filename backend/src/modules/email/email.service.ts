@@ -19,6 +19,55 @@ export class EmailService {
       },
     });
   }
+  /**
+   * Send password reset email to user
+   * @param email - User's email address
+   * @param name - User's name
+   * @param token - Password reset token
+   */
+  async sendPasswordResetEmail(
+    email: string,
+    name: string,
+    token: string,
+  ): Promise<void> {
+    try {
+      const resetUrl = `${this.configService.get('FRONTEND_URL')}/reset-password?token=${token}`;
+
+      await this.transporter.sendMail({
+        from: this.configService.get('SMTP_FROM_EMAIL'),
+        to: email,
+        subject: 'Reset Your Password',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Hello ${name},</h2>
+            <p>You requested a password reset. Click the button below to reset your password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" 
+                 style="background-color: #2196F3; color: white; padding: 12px 24px; 
+                        text-decoration: none; border-radius: 4px; display: inline-block;">
+                Reset Password
+              </a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #666;">${resetUrl}</p>
+            <p>This link will expire in 24 hours.</p>
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            <p style="color: #999; font-size: 12px;">
+              If you didn't request this, you can safely ignore this email.
+            </p>
+          </div>
+        `,
+      });
+
+      this.logger.log(`Password reset email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send password reset email to ${email}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 
   /**
    * Send verification email to user

@@ -50,6 +50,23 @@ export class User {
   verificationTokenExpiry: Date | null;
 
   @Column({
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    name: 'password_reset_token',
+  })
+  @Exclude()
+  passwordResetToken: string | null;
+
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+    name: 'password_reset_token_expiry',
+  })
+  @Exclude()
+  passwordResetTokenExpiry: Date | null;
+
+  @Column({
     type: 'enum',
     enum: UserRole,
     default: UserRole.USER,

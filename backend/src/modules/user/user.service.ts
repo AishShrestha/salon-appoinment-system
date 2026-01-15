@@ -78,6 +78,14 @@ export class UserService {
   /**
    * Find user by verification token
    * @param token - Verification token
+   */
+  async findByPasswordResetToken(token: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { passwordResetToken: token },
+    });
+  }
+
+  /**
    * @returns User if found, null otherwise
    */
   async findByVerificationToken(token: string): Promise<User | null> {

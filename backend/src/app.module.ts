@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppointmentModule } from './modules/appointment/appointment.module';
@@ -14,6 +18,27 @@ import { getTypeOrmConfig } from './config/typeorm.config';
 
 @Module({
   imports: [
+    // Global Redis cache for rate limiting and other caching
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: (configService: ConfigService) => ({
+        store: redisStore,
+        url: configService.get<string>('REDIS_URL'),
+        ttl: 0, // Let each key set its own TTL
+      }),
+      inject: [ConfigService],
+      imports: [ConfigModule],
+    }),
+
+    // Global IP-based rate limiting
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000, // 60 seconds
+        limit: 3, // 3 requests per ttl
+      },
+    ]),
+
     // Configure environment variables globally
     ConfigModule.forRoot({
       isGlobal: true,
@@ -40,6 +65,12 @@ import { getTypeOrmConfig } from './config/typeorm.config';
     BreakPeriodModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    // Apply throttler globally
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

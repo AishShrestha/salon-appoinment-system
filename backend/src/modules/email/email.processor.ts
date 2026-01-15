@@ -9,6 +9,12 @@ export interface VerificationEmailJob {
   token: string;
 }
 
+export interface PasswordResetEmailJob {
+  email: string;
+  name: string;
+  token: string;
+}
+
 /**
  * EmailProcessor - Processes email queue jobs (SRP)
  * Follows Single Responsibility Principle: only processes email jobs
@@ -43,6 +49,35 @@ export class EmailProcessor {
         error.stack,
       );
       throw error; // Bull will retry the job
+    }
+  }
+
+  /**
+   * Process password reset email job
+   * @param job - Bull job containing email data
+   */
+  @Process('send-password-reset')
+  async handlePasswordResetEmail(job: Job<PasswordResetEmailJob>) {
+    this.logger.log(
+      `Processing password reset email job for ${job.data.email}`,
+    );
+
+    try {
+      await this.emailService.sendPasswordResetEmail(
+        job.data.email,
+        job.data.name,
+        job.data.token,
+      );
+
+      this.logger.log(
+        `Successfully processed password reset email for ${job.data.email}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to process password reset email for ${job.data.email}`,
+        error.stack,
+      );
+      throw error;
     }
   }
 }
