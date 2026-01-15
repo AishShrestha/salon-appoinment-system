@@ -19,6 +19,7 @@ import {
 } from './dto';
 import { Auth, CurrentUser } from './decorators';
 import { UserRole } from 'src/common/enums';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -230,5 +231,35 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(user, changePasswordDto);
+  }
+
+  /**
+   * Resend email verification link
+   */
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend email verification link',
+    description:
+      'Sends a new email verification link if the email exists and is not verified.',
+  })
+  @ApiBody({ type: ResendVerificationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Verification email sent if user exists and is not verified.',
+    schema: {
+      example: {
+        message: ' Verification link has been sent',
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'User already verified' })
+  async resendVerification(
+    @Body() resendVerificationDto: ResendVerificationDto,
+  ) {
+    await this.authService.resendVerificationEmail(resendVerificationDto.email);
+    return {
+      message: ' Verification link has been sent',
+    };
   }
 }

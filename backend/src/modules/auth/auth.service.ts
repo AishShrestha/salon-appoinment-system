@@ -426,4 +426,59 @@ export class AuthService {
     // Always return the same generic response
     return GENERIC_RESPONSE;
   }
+  /**
+   * Resend verification email
+   * @param email - User email address
+   */
+  async resendVerificationEmail(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    let user: User | null = null;
+
+    try {
+      user = await this.userService.findByEmail(normalizedEmail);
+      console.log('User found for resend-verification:', user);
+    } catch (err) {
+      this.logger.error('Error querying user for resend-verification', err);
+
+      return;
+    }
+
+    if (!user) {
+      // Silent success if user does not exist
+      return;
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('User is already verified');
+    }
+
+    // Invalidate old verification tokens
+    const verificationToken = generateVerificationToken();
+    const verificationTokenExpiry = generateTokenExpiry();
+
+    await this.userService.update(user.id, {
+      verificationToken,
+      verificationTokenExpiry,
+    });
+
+    try {
+      await this.emailQueue.add(
+        'send-verification',
+        {
+          email: user.email,
+          name: user.name,
+          token: verificationToken,
+        } as VerificationEmailJob,
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 },
+        },
+      );
+      this.logger.log(
+        `Verification email re-sent for user: ${user.email} (ID: ${user.id})`,
+      );
+    } catch (err) {
+      this.logger.error('Error queueing verification email', err);
+    }
+  }
 }
