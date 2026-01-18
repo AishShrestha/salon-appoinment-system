@@ -15,6 +15,7 @@ import { ServiceModule } from './modules/service/service.module';
 import { BulkAppointmentModule } from './modules/bulk-appointment/bulk-appointment.module';
 import { BreakPeriodModule } from './modules/break-period/break-period.module';
 import { getTypeOrmConfig } from './config/typeorm.config';
+import { KhaltiModule } from './modules/khalti/khalti.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { getTypeOrmConfig } from './config/typeorm.config';
     ServiceModule,
     BulkAppointmentModule,
     BreakPeriodModule,
+    KhaltiModule,
   ],
   controllers: [],
   providers: [

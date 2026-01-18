@@ -7,6 +7,7 @@ import { Appointment } from './entities/appointment.entity';
 import { AppointmentLog } from './entities/appointment-log.entity';
 import { Service } from '../service/entities/service.entity';
 import { BreakPeriod } from '../break-period/entities/break-period.entity';
+import { Payment } from 'src/modules/khalti/entities/payment.entity';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { BreakPeriod } from '../break-period/entities/break-period.entity';
       AppointmentLog,
       Service,
       BreakPeriod,
+      Payment,
     ]),
     BullModule.registerQueue({
       name: 'notification',

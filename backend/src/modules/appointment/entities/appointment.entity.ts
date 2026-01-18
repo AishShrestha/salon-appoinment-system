@@ -12,6 +12,7 @@ import { AppointmentStatus } from '../../../common/enums';
 import { User } from '../../user/entities/user.entity';
 import { Service } from '../../service/entities/service.entity';
 import { AppointmentLog } from './appointment-log.entity';
+import { Payment } from '../../khalti/entities/payment.entity';
 
 @Entity('appointments')
 export class Appointment {
@@ -42,6 +43,14 @@ export class Appointment {
 
   @Column({ type: 'text', nullable: true })
   notes?: string;
+
+  // Optional: Link to payment if paid online. Null for onsite/cash payments.
+  @Column({ type: 'int', name: 'payment_id', nullable: true })
+  paymentId?: number;
+
+  @ManyToOne(() => Payment, { nullable: true })
+  @JoinColumn({ name: 'payment_id' })
+  payment?: Payment;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
